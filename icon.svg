@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Annotation">
+  <rect width="64" height="64" rx="14" fill="#1b1c20"/>
+  <path d="M14 16h36a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H30l-9 8v-8h-7a4 4 0 0 1-4-4V20a4 4 0 0 1 4-4z" fill="none" stroke="#3b7bff" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M23 26h18M23 33h11" stroke="#9fb6ff" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="46" cy="41" r="10" fill="#2a5fd6"/>
+  <text x="46" y="45.2" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="12" font-weight="700" fill="#fff">1</text>
+</svg>

@@ -1,0 +1,23 @@
+dsh-annotation
+Copyright 2026 zengxiaolou
+
+This product includes software adapted from:
+
+  @michengai/dsh-btw — https://github.com/MichengAI/dsh-btw
+  Copyright 2026 MichengAI
+  Licensed under the Apache License, Version 2.0 (see LICENSE-dsh-btw)
+
+What was adapted (lib/index.js, the side-question host pipeline):
+  - the "fork the current provider with tools disabled, answer once, dispose"
+    pipeline (subagents.getProvider('fork') → startActivation → dispose);
+  - all BTW-specific pieces were removed: its internal command plumbing, its
+    tool guard, and its chat-bubble renderer.
+
+What is original to this project:
+  - the local HTTP route /dsh-annotation/ask and its NDJSON framing;
+  - the prompts, request/response shapes and error strings;
+  - the whole client half (selection toolbar, annotation bubble, comment chip,
+    detail card, side-question modal and streaming answer card);
+  - the annotation anchoring strategy (live Range → block offsets → text search).
+
+Section 4 of the Apache License 2.0 requires this statement to be preserved.

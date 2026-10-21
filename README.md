@@ -1,0 +1,91 @@
+# dsh-annotation
+
+划选对话里的回答文字 → 就地写一句注释 → 输入框上方只留一个 `N 条注释` 胶囊，多条一起随消息发出。
+
+## 交互
+
+1. 在任意回答里划选一段文字。
+2. 浮出的评论框里可以写备注，也可以留空（纯引用）。回车保存，Esc 取消。
+3. 选中的文字就地保留淡色底纹，末尾挂一个编号圆点；点圆点可以再编辑那条注释。
+4. 输入框上方出现 `N 条注释` 胶囊：**悬停或点击**才浮出详情卡（逐条删除、全部清除、点条目跳回原文），平时不占位。
+5. 注释以单行文本写进草稿，自己按回车或点发送即可带上，不需要额外按钮。
+
+## 草稿里长什么样
+
+每条注释一行，紧跟在你自己写的文字后面：
+
+```
+〔注释 1〕「你要的是旧版「六根线跳动」的」｜备注：这句按旧版改
+```
+
+草稿是唯一事实来源：你在输入框里删掉这一行，胶囊里的那条也会同步消失；消息发出去之后同样自动清理。
+
+## 实现要点
+
+- 浮层挂在 `shell.overlay`（整帧浮层，压在对话滚动容器之上），高亮用 `Range.getClientRects()` 计算、绝对定位覆盖绘制，**不改动被选中的 DOM**，所以回答流式重绘时不会破坏原文。
+- 胶囊挂在 `conversation.input.dock`（输入框上方一整条）。
+- 发送走 `inputActions.captureInsertion() / insertText()`，失败时回退 `setDraft()`，最后 `submit()`。
+- 摘录保留选区的富文本（只放行 `code/strong/em/b/i/span/br`，其余标签降级为纯文本），所以行内代码在列表里仍然是代码样式；用户备注保持纯文本。
+- 注释的 Range 失效（换会话、消息重渲染、被压缩）时自动丢弃，不会留下指向空气的高亮。
+
+## 已知边界
+
+- 按 Enter 或点自带发送键的消息**不会**带上注释——没有 pre-submit 钩子可用，必须在胶囊里点「带注释发送」。
+- 注释只存在于当前页面内存，刷新即消失。
+- 划选必须落在非输入区域；composer 里的选区会被忽略。
+
+## 卸载
+
+在 Plugins 设置里停用 `dsh-annotation`，或从 profile 移除该 bundle。
+
+
+## 侧边对话
+
+选中文字 → 点「侧边对话」→ 把选中内容（含已排队的注释）复制到剪贴板，并直接开一个
+侧边对话标签页（调用 `betterSidebar.openTab({ type: 'sidechat' }, { sessionId })`，
+线程由 better-sidebar 自己创建），随后把选中内容（含注释）直接写进它的输入框。
+
+写入方式：等待侧栏挂载后，找到 class 含 `sidechat` 的 `contenteditable`，聚焦后
+用 `execCommand('insertText')` 写入；若编辑器拒绝，则退化为派发一个 `paste` 事件。
+两条都失败时剪贴板里仍有内容，手动粘贴即可。
+
+为什么不能用接口写入：`dsh-better-sidebar` 的服务只暴露 `openTab / closeTab /
+registerTab` 这些面板管理方法，线程创建与发消息走它内部的 `ctx.connection` RPC，
+没有对外接口，插件无法代发。
+
+## 旁问（第三个选项）
+
+选中文字 → 点「旁问」→ 弹出模态：标题「旁问这段内容」、可展开的「引用原文」、
+「你想了解什么？」输入框，底部是 取消 / 解释一下 / 发送旁问。
+
+发送后模态关闭，回答以**卡片形式出现在消息流里**（挂在
+`conversation.chat.turnTail`），不是浮在角落：卡片头部是问题、可折叠引用、
+下方正文按**增量流式**追加（`POST /dsh-annotation/ask` 返回 NDJSON，每帧
+`{delta}`，收尾 `{done}`）。
+
+host 侧用 `subagents.getProvider('fork')` 起一次性子会话、下
+`tools.restrict({allow: []})` 禁用全部工具，回答完即 `dispose`，不写主会话历史。
+这条 fork 流水线参考 `@michengai/dsh-btw`（Apache-2.0），见 `NOTICE`。
+
+## 安装
+
+```bash
+# 在 DSH 里以本地 bundle 安装（会写进当前 profile 并即时生效）
+plugin_manager install_bundle /绝对路径/dsh-annotation
+```
+
+安装后划选任意回答文字即可看到工具栏。
+
+## 已知限制
+
+- 注释以单行文本写进输入框草稿，不是输入框内的独立胶囊（消息节点类型由 DSH 核心固定，插件无法新增）。
+- 旁问的答案目前是「收尾时整段推送」，尚未做到逐字增量：`activation.result` 只给最终结果。
+- 侧边对话只能打开标签页并复制内容；better-sidebar 没有对外写入线程草稿的接口，DOM 写入会失败并在 15 秒后弹出诊断卡片。
+
+## 许可
+
+本项目以 **Apache License 2.0** 发布，见 `LICENSE`。
+
+`lib/index.js` 的旁问 host 流水线改编自 [`@michengai/dsh-btw`](https://github.com/MichengAI/dsh-btw)
+（Copyright 2026 MichengAI，Apache-2.0），其许可原文见 `LICENSE-dsh-btw`，
+改动说明与署名见 `NOTICE`。依 Apache-2.0 第 4 条，这两份文件必须随代码一起分发。
