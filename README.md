@@ -39,15 +39,36 @@
 在 Plugins 设置里停用 `dsh-annotation`，或从 profile 移除该 bundle。
 
 
+## 会话归属（v0.1.1）
+
+所有状态都按**发起划词的那个对话**分桶，不再是一份全局单例：
+
+| 状态 | 归属 | 表现 |
+| --- | --- | --- |
+| 注释 / 高亮 / `N 条注释` 胶囊 | 选区所在会话 | 切到别的会话看不到，也数不到 |
+| 评论框、选区工具条 | 选区所在会话 | 侧栏、菜单、其他列里的划词不弹工具条 |
+| 旁问弹窗与旁问卡片 | 发起它的会话 | 切走即隐藏，切回仍在；不会出现在别人的对话里 |
+| 侧边对话标签与写入 | 发起它的会话 | `openTab` 带该会话的 scope，写入前校验侧栏作用域 |
+| 侧栏诊断卡 | 发起它的会话 | 只在出问题的那条对话里 |
+
+会话归属不是猜出来的，也不依赖 id 字符串格式：
+
+- 选区：每个 layer 挂在某一篇对话里，从自己的 host 节点向上找最近的对话正文根
+  （`[data-conversation-content]`）。**选区落在这篇正文里才认领**，会话 id 一律取
+  slot props 的 `sessionId`；侧栏、菜单、别的会话里的划词不会被认领。
+- 旁问卡片：由 `conversation.chat.turnTail` 传入的 `sessionId` 决定，不是本会话就渲染 `null`。
+- 旁问请求：`POST /dsh-annotation/ask` 带的是真正发起旁问的会话，fork 上下文不会串。
+
 ## 侧边对话
 
 选中文字 → 点「侧边对话」→ 把选中内容（含已排队的注释）复制到剪贴板，并直接开一个
 侧边对话标签页（调用 `betterSidebar.openTab({ type: 'sidechat' }, { sessionId })`，
 线程由 better-sidebar 自己创建），随后把选中内容（含注释）直接写进它的输入框。
 
-写入方式：等待侧栏挂载后，找到 class 含 `sidechat` 的 `contenteditable`，聚焦后
-用 `execCommand('insertText')` 写入；若编辑器拒绝，则退化为派发一个 `paste` 事件。
-两条都失败时剪贴板里仍有内容，手动粘贴即可。
+写入方式：等待侧栏挂载后，只在**本文会话作用域**内找 class 含 `sidechat` 的
+`contenteditable`（右栏还挂着编辑器页、以及其他会话停靠的标签，不能按全页抓第一个），
+聚焦后用 `execCommand('insertText')` 写入；若编辑器拒绝，则退化为派发一个 `paste` 事件。
+两条都失败时剪贴板里仍有内容，手动粘贴即可，诊断卡落在发起它的那条对话里。
 
 为什么不能用接口写入：`dsh-better-sidebar` 的服务只暴露 `openTab / closeTab /
 registerTab` 这些面板管理方法，线程创建与发消息走它内部的 `ctx.connection` RPC，
@@ -61,7 +82,7 @@ registerTab` 这些面板管理方法，线程创建与发消息走它内部的 
 发送后模态关闭，回答以**卡片形式出现在消息流里**（挂在
 `conversation.chat.turnTail`），不是浮在角落：卡片头部是问题、可折叠引用、
 下方正文按**增量流式**追加（`POST /dsh-annotation/ask` 返回 NDJSON，每帧
-`{delta}`，收尾 `{done}`）。
+`{delta}`，收尾 `{done}`）。卡片只属于发起旁问的那个会话。
 
 host 侧用 `subagents.getProvider('fork')` 起一次性子会话、下
 `tools.restrict({allow: []})` 禁用全部工具，回答完即 `dispose`，不写主会话历史。
@@ -80,7 +101,9 @@ plugin_manager install_bundle /绝对路径/dsh-annotation
 
 - 注释以单行文本写进输入框草稿，不是输入框内的独立胶囊（消息节点类型由 DSH 核心固定，插件无法新增）。
 - 旁问的答案目前是「收尾时整段推送」，尚未做到逐字增量：`activation.result` 只给最终结果。
-- 侧边对话只能打开标签页并复制内容；better-sidebar 没有对外写入线程草稿的接口，DOM 写入会失败并在 15 秒后弹出诊断卡片。
+- 侧边对话只能打开标签页并复制内容；better-sidebar 没有对外写入线程草稿的接口。写入失败时 15 秒后弹出诊断卡片，卡片只落在发起它的那条对话里。
+- 注释与旁问都是页面内存态：刷新即失，不跨设备、不落盘。会话分桶只解决「同一次会话里串到别人对话」的问题。
+- 自检：`node test/boot.test.mjs` 验证模块求值与 slot 装配；真实渲染与交互仍需重载 DSH 后人工验收。
 
 ## 许可
 
