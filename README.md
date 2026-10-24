@@ -1,5 +1,8 @@
 # dsh-annotation
 
+![dsh-annotation](https://raw.githubusercontent.com/zengxiaolou/dsh-annotation/main/docs/images/promo.png)
+
+
 划选对话里的回答文字 → 就地写一句注释 → 每条进草稿成为一枚 `注释 · N` 胶囊，多条一起随消息发出；
 两条以上时，输入框上方会多一个 `N 条注释` 胶囊用来跳回原文 / 全部清除。
 
