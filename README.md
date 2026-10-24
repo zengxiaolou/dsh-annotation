@@ -2,6 +2,14 @@
 
 ![dsh-annotation](https://raw.githubusercontent.com/zengxiaolou/dsh-annotation/main/docs/images/promo.png)
 
+<p>
+<a href="https://www.npmjs.com/package/dsh-annotation"><img alt="npm" src="https://img.shields.io/npm/v/dsh-annotation?color=2f81f7&label=npm"></a>
+<a href="https://www.npmjs.com/package/dsh-annotation"><img alt="downloads" src="https://img.shields.io/npm/dw/dsh-annotation?color=3fb950"></a>
+<a href="https://github.com/zengxiaolou/dsh-annotation/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/npm/l/dsh-annotation?color=bf8700"></a>
+<img alt="dsh plugin" src="https://img.shields.io/badge/DSH-plugin-7aa2ff">
+<a href="https://github.com/zengxiaolou/dsh-annotation/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/zengxiaolou/dsh-annotation?color=8250df"></a>
+</p>
+
 
 划选对话里的回答文字 → 就地写一句注释 → 每条进草稿成为一枚 `注释 · N` 胶囊，多条一起随消息发出；
 两条以上时，输入框上方会多一个 `N 条注释` 胶囊用来跳回原文 / 全部清除。
