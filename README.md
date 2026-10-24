@@ -117,6 +117,24 @@ plugin_manager install_bundle /绝对路径/dsh-annotation
 插入点要换算成 detect 坐标：胶囊在 clipboard 投影里是整段显示文本，在 detect 投影里只占
 1 个字符，直接拿 `draft.length` 当插入位置会越界。
 
+## 详情卡片的 ✕＝取消这条注释（v0.1.4）
+
+输入框里那枚 `注释 · N` 胶囊，点一下打开的是 dsh-paste-chip 的常驻预览卡片（正文 + 字数 +
+「复制全文」）。卡片右上角现在有 **✕**，点它就是**取消这条注释**：对话里的高亮、草稿里的
+这枚胶囊一起消失，剩下的注释重新编号。
+
+只认 ✕。这三种都不是「关闭」，注释留着：
+
+| 动作 | 事件 reason | 结果 |
+| --- | --- | --- |
+| 点 ✕ | `close` | 删掉这条注释（高亮 + 草稿胶囊），并弹一条「已取消这条注释」 |
+| Esc / 点卡片外部 | `dismiss` | 只收起卡片 |
+| 点另一枚 `注释 · N` 的卡片 | `switch` | 换预览，旧的注释不动 |
+| 插件自己删掉注释 | `removed` | 顺手收掉卡片，避免留一张写着已删内容的卡 |
+
+订阅走 `ctx.get('pasteChip').watchPreview(fn)`：服务必须用 `ctx.get` 取，cordis 上下文里
+直接读没在 `inject` 声明的服务会抛 `without inject`。服务实例换了（热更新）会自动退旧订新。
+
 ## 已知限制
 
 - 整份草稿重写一律走 `setDraft({ text, references })`：`setDraft(纯字符串)` 会把草稿里
@@ -126,7 +144,7 @@ plugin_manager install_bundle /绝对路径/dsh-annotation
 - 旁问的答案目前是「收尾时整段推送」，尚未做到逐字增量：`activation.result` 只给最终结果。
 - 侧边对话只能打开标签页并复制内容；better-sidebar 没有对外写入线程草稿的接口。写入失败时 15 秒后弹出诊断卡片，卡片只落在发起它的那条对话里。
 - 注释与旁问都是页面内存态：刷新即失，不跨设备、不落盘。会话分桶只解决「同一次会话里串到别人对话」的问题。
-- 自检：`node test/boot.test.mjs` 验证模块求值、slot 装配，并用一个按 Host 语义写的
+- 自检：`node test/boot.test.mjs` 验证模块求值、slot 装配、✕ 关闭即取消这条注释，并用一个按 Host 语义写的
   paste-chip 替身跑「两条注释并存 → 逐条删除 → 编号跟随」和降级通道；真实渲染与交互
   仍需重载 DSH 后人工验收。
 

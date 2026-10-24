@@ -178,7 +178,7 @@ assert.ok(!/draft\.indexOf\(a\.block\) < 0\) \{\s*\n\s*annos\.splice/.test(sourc
 /* --- 端到端：两条注释并存、逐条删除、编号跟随 --------------------------------
    用一个按 DSH 语义写的 paste-chip 替身跑真实链路：insert 只认 detect 坐标 +
    同一 draftRev，setDraft(text) 会丢胶囊（和 Host 的 setDraft 一致）。 ---------- */
-const { appendBlock, rewriteChips, removeAnno, annos, composers, setChipHost } = test;
+const { appendBlock, rewriteChips, removeAnno, annos, composers, setChipHost, annoAliveInDraft: aliveCheck } = test;
 
 function makeFakeWorld() {
   const chipState = { draft: '', occurrences: [], draftRev: 0 };
@@ -207,7 +207,18 @@ function makeFakeWorld() {
       bodies.set(ref, text);
       return { ok: true, ref };
     },
+    /* 预览开关：真插件在 ✕ / Esc / 换胶囊时广播，reason 区分关法 */
+    watchPreview(listener) {
+      watchers.add(listener);
+      return () => watchers.delete(listener);
+    },
+    closePreview(ref) {
+      emitPreview({ phase: 'unpin', ref, reason: 'removed' });
+      return true;
+    },
   };
+  const watchers = new Set();
+  const emitPreview = (event) => watchers.forEach((fn) => fn(event));
 
   const actions = {
     /* Host 的 setDraft(text) 只吃纯文本，胶囊会一起没；对象入参才保留胶囊 */
@@ -224,7 +235,7 @@ function makeFakeWorld() {
     submit() {},
   };
 
-  return { chipState, bodies, service, actions };
+  return { chipState, bodies, service, actions, emitPreview, watchers };
 }
 
 const world = makeFakeWorld();
@@ -276,6 +287,41 @@ assert.equal(world.chipState.occurrences.length, 1);
 composers.delete('s1');
 
 console.log('boot.test 通过：模块求值、apply 装配、会话隔离、多条注释增删与编号跟随均就位');
+
+/* --- 详情卡片的 ✕：关闭即取消这条注释 ---------------------------------------- */
+{
+  const linked = makeFakeWorld();
+  setChipHost({ get: (name) => (name === 'pasteChip' ? linked.service : undefined) });
+  composers.set('s3', {
+    actions: linked.actions,
+    draft: () => linked.chipState.draft,
+    state: () => linked.chipState,
+  });
+
+  const target = { id: 301, sessionId: 's3', text: '要被关闭掉的那条', note: '', chipRef: null, block: null };
+  const keep = { id: 302, sessionId: 's3', text: '另一条', note: '', chipRef: null, block: null };
+  annos.push(target, keep);
+  assert.equal(appendBlock(target), true);
+  assert.equal(appendBlock(keep), true);
+  assert.equal(linked.watchers.size, 1, '写第一枚胶囊时应当订阅上预览开关');
+
+  /* 认领：按 ref 找得到对应注释 */
+  assert.equal(test.annoOfPreviewRef(target.chipRef).id, 301);
+
+  /* Esc / 点外部 / 换胶囊 都不是「关闭」，注释必须留着 */
+  for (const reason of ['dismiss', 'switch', 'removed']) {
+    linked.emitPreview({ phase: 'unpin', ref: target.chipRef, reason });
+    assert.equal(annos.some((a) => a.id === 301), true, `reason=${reason} 不应删除注释`);
+  }
+
+  /* ✕ 关闭 = 取消这条注释：注释没了，草稿里的胶囊也没了，另一条重新编号 */
+  linked.emitPreview({ phase: 'unpin', ref: target.chipRef, reason: 'close' });
+  assert.equal(annos.some((a) => a.id === 301), false, '关掉卡片应删掉这条注释');
+  assert.equal(linked.chipState.occurrences.length, 1, '草稿里应只剩另一条胶囊');
+  assert.equal(keep.block, '〔注释 1〕「另一条」', '活下来的那条要重新编号');
+  assert.equal(annoAliveInDraft(keep, linked.chipState.draft, linked.chipState.occurrences), true);
+  composers.delete('s3');
+}
 
 /* --- 降级路径：paste-chip 装了但服务取不到（胶囊通道不可用） ------------------
    这时注释以纯文本写进草稿，会被 paste-chip 被动折叠成无 ref 的胶囊：
