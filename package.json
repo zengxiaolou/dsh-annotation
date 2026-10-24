@@ -38,7 +38,15 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zengxiaolou/dsh-annotation.git"
+    "url": "https://github.com/zengxiaolou/dsh-annotation"
   },
-  "homepage": "https://github.com/zengxiaolou/dsh-annotation#readme"
+  "homepage": "https://github.com/zengxiaolou/dsh-annotation#readme",
+  "bugs": {
+    "url": "https://github.com/zengxiaolou/dsh-annotation/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness"
+  ]
 }
