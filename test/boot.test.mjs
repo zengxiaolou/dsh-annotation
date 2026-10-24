@@ -288,6 +288,17 @@ composers.delete('s1');
 
 console.log('boot.test 通过：模块求值、apply 装配、会话隔离、多条注释增删与编号跟随均就位');
 
+/* --- 输入框上方的「N 条注释」胶囊：两条以上才出现 ---------------------------- */
+{
+  assert.ok(
+    /if \(live\.length < 2\) \{/.test(source),
+    '一条注释时不该再弹「1 条注释」胶囊，门槛应是 live.length < 2',
+  );
+  for (const dead of ['panel.send', 'panel.hint']) {
+    assert.ok(!source.includes(dead), '上一版面板的死文案应当删掉：' + dead);
+  }
+}
+
 /* --- 工具条落点：贴着选区下方，下方被输入框挡住就翻到上方 ---------------------- */
 {
   const { barTopFor } = test;
