@@ -48,5 +48,8 @@
     "dsh",
     "dsh-plugin",
     "deepseek-harness"
-  ]
+  ],
+  "scripts": {
+    "test": "node test/boot.test.mjs"
+  }
 }
