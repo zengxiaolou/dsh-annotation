@@ -1,7 +1,6 @@
 {
   "name": "dsh-annotation",
   "version": "0.1.6",
-  "private": true,
   "type": "module",
   "description": "划选回答文字打注释，输入框内以胶囊聚合，多条一起随消息发送。",
   "exports": {
@@ -51,5 +50,8 @@
   ],
   "scripts": {
     "test": "node test/boot.test.mjs"
+  },
+  "devDependencies": {
+    "react": "^18.3.1"
   }
 }

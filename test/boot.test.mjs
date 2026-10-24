@@ -42,11 +42,23 @@ globalThis.document = {
   createElement: () => ({ style: {}, appendChild() {}, setAttribute() {}, removeAttribute() {} }),
 };
 
-/* 客户端半用宿主装载器里的 require('react') 取 React，这里直接给本机 react。 */
-const requireFromProfile = createRequire(
-  '/Users/ruler/.dsh/profiles/desktop/node_modules/',
-);
-const React = requireFromProfile('react');
+/* 客户端半用宿主装载器里的 require('react') 取 React。
+   解析顺序：本仓库 node_modules（CI 装的是 devDependency）→ DSH profile（本机裸跑）。 */
+function loadReact() {
+  const attempts = [
+    () => createRequire(import.meta.url)('react'),
+    () => createRequire('/Users/ruler/.dsh/profiles/desktop/node_modules/')('react'),
+  ];
+  for (const attempt of attempts) {
+    try {
+      return attempt();
+    } catch (err) {
+      /* 换下一个来源 */
+    }
+  }
+  throw new Error('找不到 react：本地装 devDependencies，或在本机 DSH profile 下运行');
+}
+const React = loadReact();
 
 new Function('window', source)(globalThis.window);
 
