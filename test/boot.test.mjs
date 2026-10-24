@@ -288,6 +288,28 @@ composers.delete('s1');
 
 console.log('boot.test 通过：模块求值、apply 装配、会话隔离、多条注释增删与编号跟随均就位');
 
+/* --- 工具条落点：贴着选区下方，下方被输入框挡住就翻到上方 ---------------------- */
+{
+  const { barTopFor } = test;
+  const mid = { top: 300, bottom: 320, left: 100, right: 400 };
+  assert.equal(barTopFor(mid, 34, 1080), 330, '放得下就落在选区下方 10px');
+
+  /* 选区贴着输入框：下方是输入框区域，必须翻到上方，否则工具条掉进输入框里看不见 */
+  const low = { top: 860, bottom: 880, left: 100, right: 400 };
+  assert.equal(barTopFor(low, 34, 900), 816, '下方放不下就翻到选区上方 10px');
+
+  /* 上下都没地方（视口极矮）：夹在可用区间里，不能跑出屏幕 */
+  const tall = { top: 4, bottom: 120, left: 100, right: 400 };
+  const clamped = barTopFor(tall, 34, 140);
+  assert.ok(clamped >= 8 && clamped + 34 <= 140, '夹进可用区间：' + clamped);
+
+  /* 接线不能改回固定落点：那是「对话最下面选不了」的根因 */
+  assert.ok(
+    /top: barTopFor\(end, barHeight, floorForSelection\(end\)\)/.test(source),
+    '工具条必须走 barTopFor + floorForSelection，不能固定 top: end.bottom + 12',
+  );
+}
+
 /* --- 详情卡片的 ✕：关闭即取消这条注释 ---------------------------------------- */
 {
   const linked = makeFakeWorld();
