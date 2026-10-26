@@ -1,6 +1,6 @@
 {
   "name": "dsh-annotation",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "type": "module",
   "description": "划选回答文字打注释，输入框内以胶囊聚合，多条一起随消息发送。",
   "exports": {
