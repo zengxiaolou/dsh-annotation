@@ -178,6 +178,28 @@ assert.equal(dropped.references[0].offset, 0);
 assert.equal(detectLengthOf(chipDraft, chipOccurrences), 4, '两枚胶囊各占 1 字符 + 两个空格 = detect 长度 4');
 assert.equal(detectLengthOf('纯文本', []), 3, '没有胶囊时两投影一致');
 
+/* 高亮裁剪：被注释的文字滚到输入框背后时，高亮不能盖到输入框上 ----------------
+   高亮是 fixed + 视口坐标，挂在输入框上方的 dock 里；不裁就会压住卡片。 -------- */
+const { clipRectsToFloor } = test;
+const floor = 500;
+const clipped = clipRectsToFloor(
+  [
+    { left: 0, top: 100, width: 10, height: 20, right: 10, bottom: 120 },
+    { left: 0, top: 480, width: 10, height: 40, right: 10, bottom: 520 },
+    { left: 0, top: 500, width: 10, height: 20, right: 10, bottom: 520 },
+  ],
+  floor,
+);
+assert.equal(clipped.length, 2, '整块越过输入框顶边的高亮必须丢弃');
+assert.equal(clipped[1].height, 20, '压住输入框顶边的高亮必须裁短');
+assert.equal(clipped[1].bottom, 500, '裁剪后的底边必须落在输入框顶边');
+assert.deepEqual(clipRectsToFloor([], floor), [], '空输入返回空数组');
+assert.deepEqual(clipRectsToFloor(null, floor), [], 'null 输入不抛错');
+assert.ok(
+  /clipRectsToFloor\(usableRects\(resolveRange\(a\)\), floor\)/.test(source),
+  'measure 必须把高亮裁到输入框顶边以上',
+);
+
 /* 源码级不变量：这两处一旦改回去，bug 就会复发 */
 assert.ok(/chipHost\.get\('pasteChip'\)/.test(source), '取胶囊服务必须走 ctx.get，属性访问在 cordis 里永远抛错');
 assert.ok(/function annoAliveInDraft\(/.test(source), '存活判定必须走 annoAliveInDraft');
